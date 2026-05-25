@@ -11,9 +11,6 @@ declare module 'fastify' {
     issueSessionCookie: (reply: FastifyReply, userId: string) => void;
     clearSessionCookie: (reply: FastifyReply) => void;
   }
-  interface FastifyRequest {
-    user?: { sub: string };
-  }
 }
 
 declare module '@fastify/jwt' {

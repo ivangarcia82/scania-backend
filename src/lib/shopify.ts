@@ -1,7 +1,7 @@
 import { env } from '../config/env.js';
 
 export class ShopifyError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  constructor(message: string, public override readonly cause?: unknown) {
     super(message);
     this.name = 'ShopifyError';
   }
