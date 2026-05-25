@@ -1,13 +1,17 @@
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+import { prisma } from '../src/lib/prisma.js';
+import { truncateAll } from './helpers/app.js';
 
 beforeAll(async () => {
-  // Prisma client + truncate helpers wired in Task 11
+  await prisma.$connect();
 });
 
 afterEach(async () => {
+  await truncateAll();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 afterAll(async () => {
-  // disconnect prisma — wired in Task 11
+  await prisma.$disconnect();
 });
