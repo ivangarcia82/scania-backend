@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { buildErrorHandler } from './errors.js';
 import authCookiePlugin from './plugins/auth-cookie.js';
 import healthRoute from './routes/health.js';
+import registerRoute from './routes/auth/register.js';
 
 export async function createApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -36,6 +37,8 @@ export async function createApp(): Promise<FastifyInstance> {
   await app.register(authCookiePlugin);
 
   await app.register(healthRoute);
+
+  await app.register(registerRoute, { prefix: '/api/v1/auth' });
 
   return app;
 }

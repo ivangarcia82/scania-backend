@@ -1,3 +1,4 @@
+import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
@@ -24,7 +25,7 @@ declare module '@fastify/jwt' {
 
 const COOKIE_NAME = 'session';
 
-export default async function authCookiePlugin(app: FastifyInstance) {
+async function authCookiePlugin(app: FastifyInstance) {
   await app.register(fastifyCookie);
   await app.register(fastifyJwt, {
     secret: env.JWT_SECRET,
@@ -66,3 +67,5 @@ export default async function authCookiePlugin(app: FastifyInstance) {
     });
   });
 }
+
+export default fp(authCookiePlugin);

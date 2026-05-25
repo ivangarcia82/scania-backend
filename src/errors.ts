@@ -1,4 +1,5 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
+import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 import { ZodError } from 'zod';
 
 export class AppError extends Error {
@@ -29,13 +30,14 @@ export function buildErrorHandler(nodeEnv: string) {
       } satisfies ErrorBody);
     }
 
-    if (error instanceof ZodError) {
+    if (error instanceof ZodError || hasZodFastifySchemaValidationErrors(error as FastifyError)) {
       request.log.warn({ err: error }, 'Validation error');
+      const issues = error instanceof ZodError ? error.issues : (error as FastifyError & { validation?: unknown }).validation;
       return reply.code(400).send({
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Datos inválidos',
-          issues: error.issues,
+          issues,
         },
       } satisfies ErrorBody);
     }
