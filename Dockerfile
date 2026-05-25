@@ -30,4 +30,4 @@ COPY --from=build --chown=app:app /app/prisma ./prisma
 COPY --from=build --chown=app:app /app/package.json ./package.json
 USER app
 EXPOSE 8080
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "set -e; echo '>>> PRISMA migrate deploy'; node node_modules/prisma/build/index.js migrate deploy 2>&1; echo '>>> dist contents'; ls -la dist/; echo '>>> NODE_ENV='$NODE_ENV ' PORT='$PORT; echo '>>> Starting server'; exec node dist/server.js 2>&1"]
