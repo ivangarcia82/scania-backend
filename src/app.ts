@@ -6,6 +6,7 @@ import authCookiePlugin from './plugins/auth-cookie.js';
 import healthRoute from './routes/health.js';
 import registerRoute from './routes/auth/register.js';
 import loginRoute from './routes/auth/login.js';
+import meRoute from './routes/auth/me.js';
 
 export async function createApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -42,6 +43,7 @@ export async function createApp(): Promise<FastifyInstance> {
   await app.register(async (api) => {
     await api.register(registerRoute, { prefix: '/auth' });
     await api.register(loginRoute, { prefix: '/auth' });
+    await api.register(meRoute, { prefix: '/auth' });
   }, { prefix: '/api/v1' });
 
   return app;
