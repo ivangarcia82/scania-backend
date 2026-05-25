@@ -169,7 +169,7 @@ model PasswordResetToken {
 1. zod validate
 2. user = prisma.user.findUnique({ email })
 3. ok = user && argon2.verify(user.passwordHash, password)
-4. if (!ok) → 401 AUTH_INVALID_CREDENTIALS  (constant-time-ish: still call verify with dummy hash if !user, to avoid timing oracle)
+4. if (!ok) → 401 AUTH_INVALID_CREDENTIALS  (constant-time-ish: if !user, still call `argon2.verify(DUMMY_HASH, password)` to avoid timing oracle. `DUMMY_HASH` is a precomputed argon2id hash of a random string, kept as module-level constant in `lib/crypto.ts`.)
 5. accessToken = shopify.storefront.customerAccessTokenCreate({ email, password })
    - on failure: 502 SHOPIFY_SYNC_FAILED  (we cannot return a session without it — frontend needs it for cart/checkout)
 6. jwt = sign(...); setCookie(...)
@@ -193,12 +193,13 @@ model PasswordResetToken {
 ```
 1. zod validate
 2. record = prisma.passwordResetToken.update({
-     where: { tokenHash: sha256(token), usedAt: null },
+     where: { tokenHash: sha256(token), usedAt: null, expiresAt: { gt: now() } },
      data:  { usedAt: now() },
    })
-   - if no row matched (atomic guard against double-use race) → 410 AUTH_TOKEN_INVALID
-3. if (record.expiresAt < now) → 410 AUTH_TOKEN_INVALID
-4. prisma.user.update({ id: record.userId, passwordHash: argon2.hash(password) })
+   - if no row matched (token missing / already used / expired — all atomic in one query) → 410 AUTH_TOKEN_INVALID
+   - **Note:** Prisma's `update` with a composite `where` requires `findUnique` semantics on the filter. Implementation will use `updateMany` (which accepts arbitrary filters and returns `{ count }`) and treat `count === 0` as the failure case.
+3. user = prisma.user.findUnique({ id: record.userId })  // need shopifyCustomerId
+4. prisma.user.update({ id: user.id, passwordHash: argon2.hash(password) })
 5. shopify.admin.customerUpdate({ id: user.shopifyCustomerId, password })
    - on failure: 502 SHOPIFY_SYNC_FAILED. DB password already rotated; user can still login locally and we have an out-of-sync state. Log error loudly for ops.
 6. reply 204
