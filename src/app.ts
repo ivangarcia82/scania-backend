@@ -1,6 +1,8 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import rateLimit from '@fastify/rate-limit';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import { env } from './config/env.js';
 import { buildErrorHandler } from './errors.js';
 import authCookiePlugin from './plugins/auth-cookie.js';
@@ -47,6 +49,13 @@ export async function createApp(): Promise<FastifyInstance> {
     max: 5,
     timeWindow: '15 minutes',
     keyGenerator: (req) => req.ip,
+  });
+
+  await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(cors, {
+    origin: env.CORS_ORIGINS,
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
   });
 
   await app.register(healthRoute);
