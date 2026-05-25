@@ -9,7 +9,7 @@ import { loginBodySchema } from './schemas.js';
 export default async function loginRoute(app: FastifyInstance) {
   app.post(
     '/login',
-    { schema: { body: loginBodySchema } },
+    { schema: { body: loginBodySchema }, config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } },
     async (req, reply) => {
       const body = req.body as z.infer<typeof loginBodySchema>;
 

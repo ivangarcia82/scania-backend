@@ -16,6 +16,7 @@ describe('POST /api/v1/auth/reset-password', () => {
       method: 'POST',
       url: '/api/v1/auth/reset-password',
       payload: { token, password: 'NewPass1234' },
+      remoteAddress: '10.1.0.1',
     });
     expect(res.statusCode).toBe(204);
 
@@ -36,6 +37,7 @@ describe('POST /api/v1/auth/reset-password', () => {
       method: 'POST',
       url: '/api/v1/auth/reset-password',
       payload: { token, password: 'NewPass1234' },
+      remoteAddress: '10.1.0.2',
     });
     expect(res.statusCode).toBe(410);
     expect(res.json().error.code).toBe('AUTH_TOKEN_INVALID');
@@ -50,6 +52,7 @@ describe('POST /api/v1/auth/reset-password', () => {
       method: 'POST',
       url: '/api/v1/auth/reset-password',
       payload: { token, password: 'NewPass1234' },
+      remoteAddress: '10.1.0.3',
     });
     expect(res.statusCode).toBe(410);
   });
@@ -60,6 +63,7 @@ describe('POST /api/v1/auth/reset-password', () => {
       method: 'POST',
       url: '/api/v1/auth/reset-password',
       payload: { token: 'a'.repeat(64), password: 'NewPass1234' },
+      remoteAddress: '10.1.0.4',
     });
     expect(res.statusCode).toBe(410);
   });
@@ -71,8 +75,8 @@ describe('POST /api/v1/auth/reset-password', () => {
 
     const app = await getTestApp();
     const [a, b] = await Promise.all([
-      app.inject({ method: 'POST', url: '/api/v1/auth/reset-password', payload: { token, password: 'NewPass1234' } }),
-      app.inject({ method: 'POST', url: '/api/v1/auth/reset-password', payload: { token, password: 'NewPass1234' } }),
+      app.inject({ method: 'POST', url: '/api/v1/auth/reset-password', payload: { token, password: 'NewPass1234' }, remoteAddress: '10.1.0.5' }),
+      app.inject({ method: 'POST', url: '/api/v1/auth/reset-password', payload: { token, password: 'NewPass1234' }, remoteAddress: '10.1.0.5' }),
     ]);
     const codes = [a!.statusCode, b!.statusCode].sort();
     expect(codes).toEqual([204, 410]);

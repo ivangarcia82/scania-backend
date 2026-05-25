@@ -9,7 +9,7 @@ import { forgotPasswordBodySchema } from './schemas.js';
 export default async function forgotPasswordRoute(app: FastifyInstance) {
   app.post(
     '/forgot-password',
-    { schema: { body: forgotPasswordBodySchema } },
+    { schema: { body: forgotPasswordBodySchema }, config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } },
     async (req, reply) => {
       const body = req.body as z.infer<typeof forgotPasswordBodySchema>;
 

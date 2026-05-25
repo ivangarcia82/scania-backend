@@ -9,7 +9,7 @@ import { resetPasswordBodySchema } from './schemas.js';
 export default async function resetPasswordRoute(app: FastifyInstance) {
   app.post(
     '/reset-password',
-    { schema: { body: resetPasswordBodySchema } },
+    { schema: { body: resetPasswordBodySchema }, config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } },
     async (req, reply) => {
       const body = req.body as z.infer<typeof resetPasswordBodySchema>;
       const tokenHash = hashToken(body.token);

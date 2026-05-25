@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
+import rateLimit from '@fastify/rate-limit';
 import { env } from './config/env.js';
 import { buildErrorHandler } from './errors.js';
 import authCookiePlugin from './plugins/auth-cookie.js';
@@ -40,6 +41,13 @@ export async function createApp(): Promise<FastifyInstance> {
   app.setErrorHandler(buildErrorHandler(env.NODE_ENV));
 
   await app.register(authCookiePlugin);
+
+  await app.register(rateLimit, {
+    global: false, // attached per-route via config
+    max: 5,
+    timeWindow: '15 minutes',
+    keyGenerator: (req) => req.ip,
+  });
 
   await app.register(healthRoute);
 
