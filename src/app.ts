@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import { env } from './config/env.js';
 import { buildErrorHandler } from './errors.js';
+import authCookiePlugin from './plugins/auth-cookie.js';
 import healthRoute from './routes/health.js';
 
 export async function createApp(): Promise<FastifyInstance> {
@@ -31,6 +32,8 @@ export async function createApp(): Promise<FastifyInstance> {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.setErrorHandler(buildErrorHandler(env.NODE_ENV));
+
+  await app.register(authCookiePlugin);
 
   await app.register(healthRoute);
 
