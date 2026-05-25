@@ -8,6 +8,7 @@ import registerRoute from './routes/auth/register.js';
 import loginRoute from './routes/auth/login.js';
 import meRoute from './routes/auth/me.js';
 import logoutRoute from './routes/auth/logout.js';
+import forgotPasswordRoute from './routes/auth/forgot-password.js';
 
 export async function createApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -46,6 +47,7 @@ export async function createApp(): Promise<FastifyInstance> {
     await api.register(loginRoute, { prefix: '/auth' });
     await api.register(meRoute, { prefix: '/auth' });
     await api.register(logoutRoute, { prefix: '/auth' });
+    await api.register(forgotPasswordRoute, { prefix: '/auth' });
   }, { prefix: '/api/v1' });
 
   return app;
