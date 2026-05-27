@@ -6,8 +6,16 @@ import { writeSync } from 'node:fs';
 // its buffer. Without this, a crash during startup leaves no trace in the
 // platform logs (the "logs cut off after migrate" symptom).
 function boot(msg: string): void {
+  const line = `[boot] ${msg}\n`;
+  // Write to BOTH stdout (1) and stderr (2), synchronously, so the line is
+  // captured no matter which stream the platform forwards.
   try {
-    writeSync(2, `[boot] ${msg}\n`);
+    writeSync(1, line);
+  } catch {
+    // ignore
+  }
+  try {
+    writeSync(2, line);
   } catch {
     // ignore: diagnostics must never throw
   }
