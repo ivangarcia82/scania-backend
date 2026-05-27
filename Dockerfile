@@ -11,14 +11,20 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
-RUN pnpm prisma generate
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate
 RUN pnpm build
+# Prune to production dependencies FIRST, then generate the Prisma client.
+# `pnpm install --prod` reconciles node_modules against the lockfile and wipes
+# generated, non-package files (the native query engine in .prisma/client).
+# Running `prisma generate` AFTER the prune keeps the query engine in the
+# node_modules that gets copied into the runtime image. Generating before the
+# prune (the previous order) left the runtime image without a query engine, so
+# `new PrismaClient()` crashed on boot and the healthcheck never passed.
 RUN pnpm install --prod --frozen-lockfile
+RUN pnpm prisma generate
 
 FROM node:${NODE_VERSION} AS runtime
 ENV NODE_ENV=production
@@ -30,4 +36,6 @@ COPY --from=build --chown=app:app /app/prisma ./prisma
 COPY --from=build --chown=app:app /app/package.json ./package.json
 USER app
 EXPOSE 8080
-CMD ["sh", "-c", "set -e; echo '>>> PRISMA migrate deploy'; node node_modules/prisma/build/index.js migrate deploy 2>&1; echo '>>> dist contents'; ls -la dist/; echo '>>> NODE_ENV='$NODE_ENV ' PORT='$PORT; echo '>>> Starting server'; exec node dist/server.js 2>&1"]
+# NOTE: railway.json's deploy.startCommand overrides this CMD on Railway, so
+# keep the two in sync. This CMD is the fallback for `docker run` locally.
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && exec node dist/server.js"]
