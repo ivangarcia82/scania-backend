@@ -37,8 +37,13 @@ async function main(): Promise<void> {
   boot('building Fastify app');
   const app = await createApp();
 
-  boot(`calling listen on 0.0.0.0:${env.PORT}`);
-  await app.listen({ host: '0.0.0.0', port: env.PORT });
+  // Listen on :: (IPv6 wildcard). Railway's private network — including the
+  // healthcheck probe to internal services — is IPv6. Binding to 0.0.0.0 only
+  // listens on IPv4, so the IPv6 healthcheck gets "connection refused" and the
+  // deploy fails at the healthcheck step. On Linux, :: is dual-stack and also
+  // accepts IPv4, so this covers both.
+  boot(`calling listen on [::]:${env.PORT}`);
+  await app.listen({ host: '::', port: env.PORT });
   boot('listen resolved — server is accepting connections');
 }
 
