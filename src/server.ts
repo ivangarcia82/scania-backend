@@ -1,14 +1,48 @@
-import { createApp } from './app.js';
-import { env } from './config/env.js';
+import { writeSync } from 'node:fs';
 
-async function main() {
-  const app = await createApp();
+// Boot diagnostics. writeSync(2, ...) writes to stderr SYNCHRONOUSLY, so these
+// lines survive even if the process is killed (e.g. Railway SIGKILL after a
+// healthcheck timeout) before Fastify's async pino/sonic-boom logger flushes
+// its buffer. Without this, a crash during startup leaves no trace in the
+// platform logs (the "logs cut off after migrate" symptom).
+function boot(msg: string): void {
   try {
-    await app.listen({ host: '0.0.0.0', port: env.PORT });
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
+    writeSync(2, `[boot] ${msg}\n`);
+  } catch {
+    // ignore: diagnostics must never throw
   }
 }
 
-void main();
+function describe(err: unknown): string {
+  return err instanceof Error ? (err.stack ?? `${err.name}: ${err.message}`) : String(err);
+}
+
+process.on('uncaughtException', (err) => {
+  boot(`uncaughtException: ${describe(err)}`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (err) => {
+  boot(`unhandledRejection: ${describe(err)}`);
+  process.exit(1);
+});
+
+async function main(): Promise<void> {
+  boot('process started; importing ./config/env.js');
+  const { env } = await import('./config/env.js');
+  boot(`env validated (NODE_ENV=${env.NODE_ENV}, PORT=${env.PORT})`);
+
+  boot('importing ./app.js (loads native deps: argon2, @prisma/client)');
+  const { createApp } = await import('./app.js');
+
+  boot('building Fastify app');
+  const app = await createApp();
+
+  boot(`calling listen on 0.0.0.0:${env.PORT}`);
+  await app.listen({ host: '0.0.0.0', port: env.PORT });
+  boot('listen resolved — server is accepting connections');
+}
+
+main().catch((err) => {
+  boot(`fatal during startup: ${describe(err)}`);
+  process.exit(1);
+});

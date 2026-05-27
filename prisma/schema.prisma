@@ -1,5 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" = the platform where `prisma generate` runs (the Docker build).
+  // The musl targets are required because the runtime image is node:22-alpine
+  // (Alpine uses musl libc + OpenSSL 3). Without them Prisma generates only the
+  // build platform's engine and, at runtime on Alpine, crashes with
+  // "could not locate the Query Engine for runtime linux-musl-openssl-3.0.x".
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
