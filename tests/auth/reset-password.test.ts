@@ -1,15 +1,13 @@
 import { describe, test, expect } from 'vitest';
 import { getTestApp } from '../helpers/app.js';
 import { createUser, createResetToken } from '../helpers/factories.js';
-import { mockShopifyFetchSuccess, ADMIN_CUSTOMER_UPDATE_OK } from '../helpers/shopify-mocks.js';
 import { prisma } from '../../src/lib/prisma.js';
 import { verifyPassword } from '../../src/lib/crypto.js';
 
 describe('POST /api/v1/auth/reset-password', () => {
-  test('happy path: updates local password + Shopify, marks token used', async () => {
+  test('happy path: updates local password, marks token used', async () => {
     const { user } = await createUser({ email: 'rst@x.com', password: 'OldPass123' });
     const { token } = await createResetToken(user.id);
-    mockShopifyFetchSuccess([{ data: ADMIN_CUSTOMER_UPDATE_OK }]);
 
     const app = await getTestApp();
     const res = await app.inject({
@@ -71,7 +69,6 @@ describe('POST /api/v1/auth/reset-password', () => {
   test('race: two concurrent resets with same token — exactly one succeeds', async () => {
     const { user } = await createUser();
     const { token } = await createResetToken(user.id);
-    mockShopifyFetchSuccess([{ data: ADMIN_CUSTOMER_UPDATE_OK }]);
 
     const app = await getTestApp();
     const [a, b] = await Promise.all([

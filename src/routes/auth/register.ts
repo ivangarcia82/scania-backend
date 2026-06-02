@@ -3,11 +3,7 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
 import { hashPassword } from '../../lib/crypto.js';
-import {
-  adminCustomerCreate,
-  storefrontCustomerAccessTokenCreate,
-  ShopifyError,
-} from '../../lib/shopify.js';
+import { adminCustomerCreate, ShopifyError } from '../../lib/shopify.js';
 import { AppError } from '../../errors.js';
 import { registerBodySchema } from './schemas.js';
 
@@ -42,7 +38,6 @@ export default async function registerRoute(app: FastifyInstance) {
       try {
         shopifyCustomerId = await adminCustomerCreate({
           email: body.email,
-          password: body.password,
           firstName: body.firstName,
           lastName: body.lastName,
         });
@@ -61,16 +56,6 @@ export default async function registerRoute(app: FastifyInstance) {
         data: { shopifyCustomerId },
       });
 
-      let customerAccessToken: string | null = null;
-      let expiresAt: string | null = null;
-      try {
-        const token = await storefrontCustomerAccessTokenCreate(body.email, body.password);
-        customerAccessToken = token.accessToken;
-        expiresAt = token.expiresAt;
-      } catch (e) {
-        req.log.warn({ err: e, userId }, 'storefront token creation failed after register; user can retry login');
-      }
-
       app.issueSessionCookie(reply, userId);
 
       return reply.code(201).send({
@@ -80,8 +65,6 @@ export default async function registerRoute(app: FastifyInstance) {
           firstName: updatedUser.firstName,
           lastName: updatedUser.lastName,
         },
-        customerAccessToken,
-        expiresAt,
       });
     }
   );

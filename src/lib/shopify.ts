@@ -54,10 +54,14 @@ export const storefrontClient: GraphQLClient = makeClient(
 
 // High-level helpers used by routes. These wrap the raw clients and translate
 // Shopify-specific userErrors into ShopifyError so handlers see one error type.
+//
+// Auth is owned by Postgres + own session cookies. Shopify holds only the
+// customer record (email, name) for orders/marketing. Shopify's Admin API
+// removed `password` from CustomerInput in 2024+ as part of the Customer
+// Accounts migration, so we never sync passwords to Shopify.
 
 export interface ShopifyCustomerCreate {
   email: string;
-  password: string;
   firstName?: string;
   lastName?: string;
 }
@@ -78,7 +82,6 @@ export async function adminCustomerCreate(input: ShopifyCustomerCreate): Promise
     {
       input: {
         email: input.email,
-        password: input.password,
         firstName: input.firstName,
         lastName: input.lastName,
       },
@@ -103,54 +106,4 @@ export async function adminCustomerDelete(customerId: string): Promise<void> {
     { input: { id: customerId } }
   );
   // best-effort: do not throw on userErrors — caller is already in a failure path
-}
-
-export async function adminCustomerUpdatePassword(customerId: string, password: string): Promise<void> {
-  const data = await adminClient.query<{
-    customerUpdate: { userErrors: Array<{ message: string }> };
-  }>(
-    `mutation CustomerUpdate($input: CustomerInput!) {
-       customerUpdate(input: $input) {
-         customer { id }
-         userErrors { message field }
-       }
-     }`,
-    { input: { id: customerId, password } }
-  );
-  if (data.customerUpdate.userErrors.length > 0) {
-    throw new ShopifyError(
-      `customerUpdate userErrors: ${JSON.stringify(data.customerUpdate.userErrors)}`
-    );
-  }
-}
-
-export interface StorefrontAccessToken {
-  accessToken: string;
-  expiresAt: string;
-}
-
-export async function storefrontCustomerAccessTokenCreate(
-  email: string,
-  password: string
-): Promise<StorefrontAccessToken> {
-  const data = await storefrontClient.query<{
-    customerAccessTokenCreate: {
-      customerAccessToken: { accessToken: string; expiresAt: string } | null;
-      customerUserErrors: Array<{ message: string; code?: string; field?: string[] }>;
-    };
-  }>(
-    `mutation TokenCreate($input: CustomerAccessTokenCreateInput!) {
-       customerAccessTokenCreate(input: $input) {
-         customerAccessToken { accessToken expiresAt }
-         customerUserErrors { code message field }
-       }
-     }`,
-    { input: { email, password } }
-  );
-  if (!data.customerAccessTokenCreate.customerAccessToken) {
-    throw new ShopifyError(
-      `customerAccessTokenCreate failed: ${JSON.stringify(data.customerAccessTokenCreate.customerUserErrors)}`
-    );
-  }
-  return data.customerAccessTokenCreate.customerAccessToken;
 }
