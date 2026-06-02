@@ -20,7 +20,7 @@ describe('POST /api/v1/auth/forgot-password', () => {
     expect(emailModule.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
     const [to, link] = vi.mocked(emailModule.sendPasswordResetEmail).mock.calls[0]!;
     expect(to).toBe('forgot@x.com');
-    expect(link).toMatch(/\/account\/reset\?token=[0-9a-f]{64}$/);
+    expect(link).toMatch(/^https:\/\/example\.com\/pages\/restablecer-contrasena\?token=[0-9a-f]{64}$/);
   });
 
   test('nonexistent email also returns 204 (no enumeration) and does NOT send email', async () => {

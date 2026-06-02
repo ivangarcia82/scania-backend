@@ -25,6 +25,7 @@ export default defineConfig({
       SHOPIFY_API_VERSION: '2025-01',
       RESEND_API_KEY: 'test-resend-key',
       RESEND_FROM_EMAIL: 'test@example.com',
+      PASSWORD_RESET_URL_TEMPLATE: 'https://example.com/pages/restablecer-contrasena?token={token}',
     },
   },
 });

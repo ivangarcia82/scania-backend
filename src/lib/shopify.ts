@@ -87,12 +87,50 @@ export async function adminCustomerCreate(input: ShopifyCustomerCreate): Promise
       },
     }
   );
-  if (data.customerCreate.userErrors.length > 0 || !data.customerCreate.customer) {
-    throw new ShopifyError(
-      `customerCreate userErrors: ${JSON.stringify(data.customerCreate.userErrors)}`
-    );
+
+  if (data.customerCreate.customer) {
+    return data.customerCreate.customer.id;
   }
-  return data.customerCreate.customer.id;
+
+  // If the email is already a customer in Shopify (e.g. seeded by another
+  // integration), reuse the existing record instead of failing. The Postgres
+  // user becomes the auth-of-truth and just points at that gid.
+  if (isEmailTakenError(data.customerCreate.userErrors)) {
+    const existing = await adminCustomerFindByEmail(input.email);
+    if (existing) return existing;
+  }
+
+  throw new ShopifyError(
+    `customerCreate userErrors: ${JSON.stringify(data.customerCreate.userErrors)}`
+  );
+}
+
+function isEmailTakenError(
+  userErrors: Array<{ message: string; field?: string[] }>
+): boolean {
+  return userErrors.some((e) => {
+    const msg = (e.message || '').toLowerCase();
+    const field = (e.field || []).map((f) => f.toLowerCase());
+    return field.includes('email') && (msg.includes('taken') || msg.includes('already'));
+  });
+}
+
+export async function adminCustomerFindByEmail(email: string): Promise<string | null> {
+  const data = await adminClient.query<{
+    customers: { edges: Array<{ node: { id: string; email: string | null } }> };
+  }>(
+    `query FindByEmail($q: String!) {
+       customers(first: 5, query: $q) {
+         edges { node { id email } }
+       }
+     }`,
+    { q: `email:${email}` }
+  );
+  const target = email.trim().toLowerCase();
+  const match = data.customers.edges.find(
+    (edge) => (edge.node.email || '').trim().toLowerCase() === target
+  );
+  return match ? match.node.id : null;
 }
 
 export async function adminCustomerDelete(customerId: string): Promise<void> {

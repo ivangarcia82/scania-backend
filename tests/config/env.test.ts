@@ -16,6 +16,7 @@ const validEnv = {
   SHOPIFY_API_VERSION: '2025-01',
   RESEND_API_KEY: 'rk',
   RESEND_FROM_EMAIL: 'a@b.com',
+  PASSWORD_RESET_URL_TEMPLATE: 'https://example.com/reset?token={token}',
 };
 
 describe('loadEnv', () => {

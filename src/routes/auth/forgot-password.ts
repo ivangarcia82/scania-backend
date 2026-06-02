@@ -23,8 +23,9 @@ export default async function forgotPasswordRoute(app: FastifyInstance) {
             expiresAt: new Date(Date.now() + 60 * 60 * 1000),
           },
         });
+        const resetUrl = env.PASSWORD_RESET_URL_TEMPLATE.replace('{token}', encodeURIComponent(token));
         try {
-          await emailLib.sendPasswordResetEmail(user.email, `${env.APP_PUBLIC_URL}/account/reset?token=${token}`);
+          await emailLib.sendPasswordResetEmail(user.email, resetUrl);
         } catch (e) {
           req.log.error({ err: e, userId: user.id }, 'failed to send reset email');
         }

@@ -24,6 +24,14 @@ const EnvSchema = z.object({
 
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
+
+  // URL template the password-reset email points the user to. Must contain
+  // the literal placeholder {token}. Example:
+  //   https://scania-mexico.myshopify.com/pages/restablecer-contrasena?token={token}
+  PASSWORD_RESET_URL_TEMPLATE: z
+    .string()
+    .url()
+    .refine((s) => s.includes('{token}'), 'PASSWORD_RESET_URL_TEMPLATE must contain {token}'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
