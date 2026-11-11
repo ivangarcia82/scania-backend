@@ -22,6 +22,13 @@ const EnvSchema = z.object({
   SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().min(1),
   SHOPIFY_API_VERSION: z.string().min(1).default('2025-01'),
 
+  // Public self-registration (POST /register). Off by default: accounts are
+  // provisioned by admins. Set to "true" only temporarily (e.g. bulk imports).
+  REGISTRATION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
 

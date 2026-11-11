@@ -38,4 +38,9 @@ describe('loadEnv', () => {
   test('rejects invalid PORT', () => {
     expect(() => loadEnv({ ...validEnv, PORT: 'abc' })).toThrow(/PORT/);
   });
+
+  test('REGISTRATION_ENABLED defaults to false', () => {
+    expect(loadEnv(validEnv).REGISTRATION_ENABLED).toBe(false);
+    expect(loadEnv({ ...validEnv, REGISTRATION_ENABLED: 'true' }).REGISTRATION_ENABLED).toBe(true);
+  });
 });

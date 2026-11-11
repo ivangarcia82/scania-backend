@@ -1,4 +1,5 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { env } from '../../src/config/env.js';
 import { getTestApp } from '../helpers/app.js';
 import {
   mockShopifyFetchSuccess,
@@ -8,6 +9,9 @@ import {
 import { prisma } from '../../src/lib/prisma.js';
 
 describe('POST /api/v1/auth/register', () => {
+  beforeEach(() => { env.REGISTRATION_ENABLED = true; });
+  afterEach(() => { env.REGISTRATION_ENABLED = false; });
+
   test('happy path: creates user locally + Shopify, returns 201, sets cookie', async () => {
     mockShopifyFetchSuccess([
       { matches: (u) => u.includes('/admin/'), data: ADMIN_CUSTOMER_CREATE_OK },
@@ -80,5 +84,19 @@ describe('POST /api/v1/auth/register', () => {
 
     const dbUser = await prisma.user.findUnique({ where: { email: 'rollback@x.com' } });
     expect(dbUser).toBeNull();
+  });
+
+  test('403 when registration is disabled (default), and no user is created', async () => {
+    env.REGISTRATION_ENABLED = false;
+    const app = await getTestApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { email: 'nuevo@scania.com', password: 'Password123' },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('AUTH_REGISTRATION_DISABLED');
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect(await prisma.user.findUnique({ where: { email: 'nuevo@scania.com' } })).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
+import { env } from '../../config/env.js';
 import { hashPassword } from '../../lib/crypto.js';
 import { adminCustomerCreate, ShopifyError } from '../../lib/shopify.js';
 import { AppError } from '../../errors.js';
@@ -12,6 +13,10 @@ export default async function registerRoute(app: FastifyInstance) {
     '/register',
     { schema: { body: registerBodySchema } },
     async (req, reply) => {
+      if (!env.REGISTRATION_ENABLED) {
+        throw new AppError(403, 'AUTH_REGISTRATION_DISABLED', 'El registro no está disponible');
+      }
+
       const body = req.body as z.infer<typeof registerBodySchema>;
 
       const passwordHash = await hashPassword(body.password);
